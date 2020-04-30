@@ -74,6 +74,9 @@ programs:
 # Never observe below this limit.
 min_altitude: 30 deg
 
+# Never observer at larger HA than 5 hr.
+max_hour_angle: 75 deg
+
 # Time required to setup for a new field, including slew, fiber positioning, etc.
 new_field_setup : 120 s
 
