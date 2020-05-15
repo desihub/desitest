@@ -74,6 +74,9 @@ programs:
 # Never observe below this limit.
 min_altitude: 30 deg
 
+# Never observer at larger HA than 5 hr.
+max_hour_angle: 75 deg
+
 # Time required to setup for a new field, including slew, fiber positioning, etc.
 new_field_setup : 120 s
 
@@ -134,14 +137,12 @@ fiber_assignment_cadence: daily
 # Similarly, a delay of 0 indicates that fibers are assigned on
 # the first day / month after the covering tiles are completed.
 fiber_assignment_order:
-    P1: P0 delay 1
-    P2: P0+P1 delay 1
-    P3: P0+P1 delay 1
-###    P6: P5 delay 1
-###    P7: P5+P6 delay 1
+    P2: P1 delay 1
+    P3: P1+P2 delay 1
+    P4: P1+P2 delay 1
 
 # Nominal tile radius for determining whether two tiles overlap.
-tile_radius: 1.62 deg
+tile_radius: 1.63 deg
 
 #-------------------------------------------------------------------
 # Parameters to locate files needed by desisurvey.
