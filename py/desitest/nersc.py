@@ -42,6 +42,8 @@ def update(basedir=None, logdir='.', repos=None):
             'redrock-templates',
             'simqso',
             'fiberassign',
+            'prospect',
+            'desimeter',
         ]
 
     something_failed = False
@@ -80,7 +82,8 @@ def update(basedir=None, logdir='.', repos=None):
                 commands[i] = 'python -m compileall -f specsim'
 
             #- desisim-testdata & redrock-templates: data only, no tests
-            if repo in ['desisim-testdata', 'redrock-templates']:
+            #- prospect: no unit tests
+            if repo in ['desisim-testdata', 'redrock-templates', 'prospect']:
                 commands = ['git pull', ]
 
             #- desisim: use desisim-testdata to run faster

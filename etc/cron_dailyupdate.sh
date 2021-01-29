@@ -6,7 +6,7 @@
 #PBS -j oe
 
 #- Cron/batch job to run daily integration tests on edison.nersc.gov
-### 0 1 * * * /bin/bash -lc "source /scratch1/scratchdirs/dailytest/code/desitest/etc/cron_dailyupdate.sh"
+### 0 1 * * * /bin/bash -lc "source /global/common/software/desi/users/desi/desitest/etc/cron_dailyupdate.sh"
 
 #- Figure out where we are before modules changes ${BASH_SOURCE[0]} (!)
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -20,7 +20,7 @@ if [ -z "$DESI_ROOT" ]; then
     # module use /global/common/$NERSC_HOST/contrib/desi/modulefiles
     # module use /global/common/$NERSC_HOST/contrib/desi/desiconda/startup/modulefiles
     module use /global/common/software/desi/$NERSC_HOST/desiconda/startup/modulefiles
-    module load desimodules/master
+    module load desimodules/current
 fi
 
 #- Check if subversion needs to be loaded
@@ -34,10 +34,10 @@ fi
 #--------------------------------------------------------------------
 #- Update from git and run unit tests
 cd $PYDIR
-logdir=/project/projectdirs/desi/www/users/desitest/log/dailytest/$NERSC_HOST
+logdir=/global/cfs/cdirs/desi/spectro/redux/dailytest/log/$NERSC_HOST
 python -c "from desitest.nersc import update; update(logdir='$logdir')"
 
-echo http://portal.nersc.gov/project/desi/users/desitest/log/dailytest/$NERSC_HOST
+echo http://data.desi.lbl.gov/desi/spectro/redux/dailytest/log/$NERSC_HOST
 echo
 
 #--------------------------------------------------------------------
