@@ -160,6 +160,10 @@ tile_radius: 1.63 deg
 ### tiles_file: desi-tiles.fits
 tiles_file: ./test-tiles.fits
 
+commissioning: False
+# If True, tile file is a commissioning tile file. This disables checks related
+# to PROGRAM, etc.
+
 # Base path to pre-pended to all non-absolute paths used for reading and
 # writing files managed by this package. The pattern {...} will be expanded
 # using environment variables.
