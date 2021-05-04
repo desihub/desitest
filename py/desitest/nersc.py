@@ -70,7 +70,7 @@ def update(basedir=None, logdir='.', repos=None):
             #- fiberassign: compiled code
             if repo == 'fiberassign':
                 ### commands = ['git pull', 'make install']
-                commands = ['git pull', 'python setup.py build_ext --inplace']
+                commands = ['git pull', 'python setup.py build_ext --inplace', 'python setup.py test']
 
             #- desimodel: also update svn data
             if repo == 'desimodel':

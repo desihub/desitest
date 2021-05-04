@@ -71,7 +71,7 @@ rm -rf $outdir
 mkdir -p $simdir
 mkdir -p $outdir
 # python -m desispec.test.integration_test > $outdir/dailytest.log
-python -m desispec.test.old_integration_test > $outdir/dailytest.log
+python -m desispec.test.old_integration_test &> $outdir/dailytest.log
 
 echo
 echo "[...]"
