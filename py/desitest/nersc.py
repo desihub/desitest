@@ -42,6 +42,7 @@ def update(basedir=None, logdir='.', repos=None):
             'redrock-templates',
             'simqso',
             'fiberassign',
+            'specex',
             'prospect',
             'desimeter',
         ]
@@ -71,6 +72,11 @@ def update(basedir=None, logdir='.', repos=None):
             if repo == 'fiberassign':
                 ### commands = ['git pull', 'make install']
                 commands = ['git pull', 'python setup.py build_ext --inplace', 'python setup.py test']
+
+            #- specex: compiled code
+            if repo == 'specex':
+                ### commands = ['git pull', 'make install']
+                commands = ['git pull', 'python setup.py clean install --prefix ./code']
 
             #- desimodel: also update svn data
             if repo == 'desimodel':
