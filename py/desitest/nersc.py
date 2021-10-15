@@ -2,17 +2,24 @@
 Tools for updating and testing code at NERSC
 """
 
-from __future__ import absolute_import, division, print_function
 import sys, os
 import subprocess
 import time
 
 def update(basedir=None, logdir='.', repos=None):
-    '''TODO: Document'''
+    '''Update git repos in basedir and run unit tests
+
+    Args:
+        basedir: base directory with git clones in packagename/[master|main]
+
+    Options:
+        logdir: output log directory
+        repos: list of repos to update and test
+
+    Writes logfiles from each git pull + tests plus index.html into logdir
+    '''
+
     if basedir is None:
-        ### basedir = '/global/common/{}/contrib/desi/code/'.format(os.getenv('NERSC_HOST'))
-        ### basedir = '/global/common/{}/contrib/desi/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
-        ### basedir = '/global/common/software/desi/{}/desiconda/current/code/'.format(os.getenv('NERSC_HOST'))
         basedir = os.path.normpath(os.getenv('DESICONDA') + '/../code')
 
     if not os.path.exists(basedir):
@@ -44,14 +51,19 @@ def update(basedir=None, logdir='.', repos=None):
             'fiberassign',
             'prospect',
             'desimeter',
+            'desisurveyops',
         ]
 
     something_failed = False
     for repo in repos:
         t0 = time.time()
         repo_results = dict()
-        repodir = os.path.join(basedir, repo, 'master')
         repo_results['updated'] = False
+
+        repodir = os.path.join(basedir, repo, 'master')
+        if not os.path.exists(repodir):
+            repodir = os.path.join(basedir, repo, 'main')
+
         if not os.path.exists(repodir):
             repo_results['status'] = 'FAILURE'
             repo_results['log'] = 'Missing directory {}'.format(repodir)
@@ -69,7 +81,6 @@ def update(basedir=None, logdir='.', repos=None):
 
             #- fiberassign: compiled code
             if repo == 'fiberassign':
-                ### commands = ['git pull', 'make install']
                 commands = ['git pull', 'python setup.py build_ext --inplace', 'python setup.py test']
 
             #- desimodel: also update svn data
@@ -83,8 +94,15 @@ def update(basedir=None, logdir='.', repos=None):
 
             #- desisim-testdata & redrock-templates: data only, no tests
             #- prospect: no unit tests
-            if repo in ['desisim-testdata', 'redrock-templates', 'prospect']:
+            if repo in ['desisim-testdata', 'redrock-templates']:
                 commands = ['git pull', ]
+
+            #- prospect and desisurveyops: no unit tests
+            if repo in ['prospect', 'desisurveyops']:
+                commands = [
+                    "git pull",
+                    "python -m compileall -f ./py",
+                    ]
 
             #- desisim: use desisim-testdata to run faster
             if repo == 'desisim':
