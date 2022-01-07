@@ -75,8 +75,7 @@ def update(basedir=None, logdir='.', repos=None):
 
             #- specex: compiled code
             if repo == 'specex':
-                ### commands = ['git pull', 'make install']
-                commands = ['git pull', 'python setup.py clean install --prefix ./code']
+                commands = ['git pull', 'python setup.py build_ext --inplace']
 
             #- desimodel: also update svn data
             if repo == 'desimodel':
