@@ -37,6 +37,7 @@ def update(basedir=None, logdir='.', repos=None):
         repos = [
             'desiutil',
             'specter',
+            'gpu_specter',
             'desimodel',
             'desitarget',
             'desispec',
