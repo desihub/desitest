@@ -20,7 +20,7 @@ if [ -z "$DESI_ROOT" ]; then
     # module use /global/common/$NERSC_HOST/contrib/desi/modulefiles
     # module use /global/common/$NERSC_HOST/contrib/desi/desiconda/startup/modulefiles
     module use /global/common/software/desi/$NERSC_HOST/desiconda/startup/modulefiles
-    module load desimodules/current
+    module load desimodules/main
 fi
 
 #- Check if subversion needs to be loaded
@@ -70,8 +70,10 @@ rm -rf $outdir
 #- Run the integration test
 mkdir -p $simdir
 mkdir -p $outdir
-# python -m desispec.test.integration_test > $outdir/dailytest.log
-python -m desispec.test.old_integration_test &> $outdir/dailytest.log
+
+#- temporarily turn off while main survey target selection settles
+### python -m desispec.test.old_integration_test &> $outdir/dailytest.log
+echo "integration test turned off while finalizing target selection" > $outdir/dailytest.log
 
 echo
 echo "[...]"

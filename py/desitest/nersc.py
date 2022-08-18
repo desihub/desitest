@@ -10,7 +10,7 @@ def update(basedir=None, logdir='.', repos=None):
     '''Update git repos in basedir and run unit tests
 
     Args:
-        basedir: base directory with git clones in packagename/[master|main]
+        basedir: base directory with git clones in packagename/[main|master]
 
     Options:
         logdir: output log directory
@@ -62,9 +62,10 @@ def update(basedir=None, logdir='.', repos=None):
         repo_results = dict()
         repo_results['updated'] = False
 
-        repodir = os.path.join(basedir, repo, 'master')
+        repodir = os.path.join(basedir, repo, 'main')
         if not os.path.exists(repodir):
-            repodir = os.path.join(basedir, repo, 'main')
+            repodir = os.path.join(basedir, repo, 'master')
+            print(f'WARNING: using {repo}/master instead of main')
 
         if not os.path.exists(repodir):
             repo_results['status'] = 'FAILURE'
