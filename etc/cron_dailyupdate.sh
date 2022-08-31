@@ -17,10 +17,9 @@ echo `date` Running dailyupdate on `hostname`
 
 #- Configure desi environment if needed
 if [ -z "$DESI_ROOT" ]; then
-    # module use /global/common/$NERSC_HOST/contrib/desi/modulefiles
-    # module use /global/common/$NERSC_HOST/contrib/desi/desiconda/startup/modulefiles
-    module use /global/common/software/desi/$NERSC_HOST/desiconda/startup/modulefiles
-    module load desimodules/main
+    # module use /global/common/software/desi/$NERSC_HOST/desiconda/startup/modulefiles
+    # module load desimodules/main
+    source /global/common/software/desi/desi_environment.sh main
 fi
 
 #- Check if subversion needs to be loaded
