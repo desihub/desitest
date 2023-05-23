@@ -14,7 +14,8 @@ def send_email(FromName,To,Subject,Body,Cc=None):
     msg['Subject'] = Subject
 
     if Cc is not None:
-        msg['Cc'] = ",".join(Cc)
+        if len(Cc) > 0:
+            msg['Cc'] = ",".join(Cc)
 
     msg.set_payload(Body.encode('utf-8'), 'utf-8')
     

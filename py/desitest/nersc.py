@@ -202,7 +202,12 @@ def update(basedir=None, logdir='.', repos=None):
     print("\nhttp://data.desi.lbl.gov/desi/spectro/redux/dailytest/log/"+os.environ['NERSC_HOST'])
     sys.stdout = stdout
 
-    send_email("perlmutter desitest","stephenbailey@lbl.gov","perlmutter desitest {}".format(time.asctime()),output.getvalue(),Cc=["malvarez@lbl.gov","benjamin.weaver@noirlab.edu"])
+    emailfile=os.path.dirname(os.path.abspath(__file__))+'/emails.txt'
+    if os.path.isfile(emailfile):
+        emails=[line for line in open(emailfile,'r')][0].strip().split(',')
+        to=emails[0]
+        cc=emails[1:]
+        send_email("perlmutter desitest",to,"perlmutter desitest {}".format(time.asctime()),output.getvalue(),Cc=cc)
 
     print(output.getvalue())
 
