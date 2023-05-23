@@ -5,6 +5,8 @@ Tools for updating and testing code at NERSC
 import sys, os
 import subprocess
 import time
+from io import StringIO
+from desitest.util import send_email
 
 def update(basedir=None, logdir='.', repos=None):
     '''Update git repos in basedir and run unit tests
@@ -18,6 +20,12 @@ def update(basedir=None, logdir='.', repos=None):
 
     Writes logfiles from each git pull + tests plus index.html into logdir
     '''
+
+    # store stdout in string
+    stdout = sys.stdout
+    sys.stdout = output = StringIO()
+
+    print("Updates+tests started {}\n".format(time.asctime()))
 
     if basedir is None:
         basedir = os.path.normpath(os.getenv('DESICONDA') + '/../code')
@@ -54,6 +62,7 @@ def update(basedir=None, logdir='.', repos=None):
             'prospect',
             'desimeter',
             'desisurveyops',
+            'fastspecfit',
         ]
 
     something_failed = False
@@ -67,6 +76,12 @@ def update(basedir=None, logdir='.', repos=None):
             repodir = os.path.join(basedir, repo, 'master')
             print(f'WARNING: using {repo}/master instead of main')
 
+        pytestcom="pytest py/"+repo+"/test"
+        if repo == 'fiberassign':
+            pytestcom="python setup.py test"
+        if repo == 'specsim':
+            pytestcom="pytest "+repo+"/tests"
+
         if not os.path.exists(repodir):
             repo_results['status'] = 'FAILURE'
             repo_results['log'] = 'Missing directory {}'.format(repodir)
@@ -77,14 +92,14 @@ def update(basedir=None, logdir='.', repos=None):
             commands = [
                 "git pull",
                 "python -m compileall -f ./py",
-                "python setup.py test",
+                pytestcom,
             ]
             
             #- special cases for commands
 
             #- fiberassign: compiled code
             if repo == 'fiberassign':
-                commands = ['git pull', 'python setup.py build_ext --inplace', 'python setup.py test']
+                commands = ['git pull', 'python setup.py build_ext --inplace', pytestcom]
 
             #- specex: compiled code
             if repo == 'specex':
@@ -98,10 +113,8 @@ def update(basedir=None, logdir='.', repos=None):
             if repo == 'specsim':
                 i = commands.index('python -m compileall -f ./py')
                 commands[i] = 'python -m compileall -f specsim'
-
-            #- desisim-testdata & redrock-templates: data only, no tests
-            #- prospect: no unit tests
-            if repo in ['desisim-testdata', 'redrock-templates']:
+            #- desisim-testdata, desisim & redrock-templates: data only, no tests
+            if repo in ['desisim-testdata', 'desisim', 'redrock-templates']:
                 commands = ['git pull', ]
 
             #- prospect and desisurveyops: no unit tests
@@ -113,8 +126,9 @@ def update(basedir=None, logdir='.', repos=None):
 
             #- desisim: use desisim-testdata to run faster
             if repo == 'desisim':
-                i = commands.index('python setup.py test')
-                commands[i] = 'module load desisim-testdata && python setup.py test'
+                if pytestcom in commands:
+                    i = commands.index(pytestcom)
+                    commands[i] = 'module load desisim-testdata && '+pytestcom
 
             #- simqso: no py/ subdir; no tests
             if repo == 'simqso':
@@ -147,7 +161,8 @@ def update(basedir=None, logdir='.', repos=None):
         results[repo] = repo_results
         ### print('{:20s}  {}'.format(repo, results[repo]['status']))
 
-    for repo in repos:
+#    uncomment next line to wait until end to write repo log files
+#    for repo in repos:
         logfile = os.path.join(logdir, repo+'.log')
         with open(logfile, 'w') as fx:
             fx.write(results[repo]['log'])
@@ -175,13 +190,25 @@ def update(basedir=None, logdir='.', repos=None):
             fx.write('  </tr>\n')
         fx.write('</table>\n</body>\n</html>\n')
 
-    if something_failed:
-        print("Updates+tests failed at {}".format(time.asctime()))
-    else:
-        print("Updates+tests succeeded at {}".format(time.asctime()))
-
     for repo in repos:
         updated = 'updated' if results[repo]['updated'] else 'same'
         print("{:12s} {:8s} {}".format(repo, updated, results[repo]['status']))
+
+    if something_failed:
+        print("\nSome updates+tests failed {}".format(time.asctime()))
+    else:
+        print("\nAll updates+tests succeded {}".format(time.asctime()))
+
+    print("\nhttp://data.desi.lbl.gov/desi/spectro/redux/dailytest/log/"+os.environ['NERSC_HOST'])
+    sys.stdout = stdout
+
+    emailfile=os.path.dirname(os.path.abspath(__file__))+'/emails.txt'
+    if os.path.isfile(emailfile):
+        emails=[line for line in open(emailfile,'r')][0].strip().split(',')
+        to=emails[0]
+        cc=emails[1:]
+        send_email("perlmutter desitest",to,"perlmutter desitest {}".format(time.asctime()),output.getvalue(),Cc=cc)
+
+    print(output.getvalue())
 
     return results
