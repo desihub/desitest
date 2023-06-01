@@ -113,8 +113,9 @@ def update(basedir=None, logdir='.', repos=None):
             if repo == 'specsim':
                 i = commands.index('python -m compileall -f ./py')
                 commands[i] = 'python -m compileall -f specsim'
-            #- desisim-testdata, desisim & redrock-templates: data only, no tests
-            if repo in ['desisim-testdata', 'desisim', 'redrock-templates']:
+
+            #- desisim-testdata & redrock-templates: data only, no tests
+            if repo in ['desisim-testdata', 'redrock-templates']:
                 commands = ['git pull', ]
 
             #- prospect and desisurveyops: no unit tests
@@ -128,7 +129,8 @@ def update(basedir=None, logdir='.', repos=None):
             if repo == 'desisim':
                 if pytestcom in commands:
                     i = commands.index(pytestcom)
-                    commands[i] = 'module load desisim-testdata && '+pytestcom
+                    commands[i] = ('module load desisim-testdata && '+pytestcom
+                                   +' && '+'module unload desisim-testdata')
 
             #- simqso: no py/ subdir; no tests
             if repo == 'simqso':
