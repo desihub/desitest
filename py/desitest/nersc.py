@@ -65,6 +65,7 @@ def update(basedir=None, logdir='.', repos=None):
             'fastspecfit',
         ]
 
+    pullcmd='git pull && chmod -R a+rX .'
     something_failed = False
     for repo in repos:
         t0 = time.time()
@@ -90,7 +91,7 @@ def update(basedir=None, logdir='.', repos=None):
             os.chdir(repodir)
             repo_results['log'] = ['--- {}'.format(repodir), '']
             commands = [
-                "git pull",
+                pullcmd,
                 "python -m compileall -f ./py",
                 pytestcom,
             ]
@@ -99,11 +100,11 @@ def update(basedir=None, logdir='.', repos=None):
 
             #- fiberassign: compiled code
             if repo == 'fiberassign':
-                commands = ['git pull', 'python setup.py build_ext --inplace', pytestcom]
+                commands = [pullcmd, 'python setup.py build_ext --inplace', pytestcom]
 
             #- specex: compiled code
             if repo == 'specex':
-                commands = ['git pull', 'python setup.py build_ext --inplace']
+                commands = [pullcmd, 'python setup.py build_ext --inplace']
 
             #- desimodel: also update svn data
             if repo == 'desimodel':
@@ -116,12 +117,12 @@ def update(basedir=None, logdir='.', repos=None):
 
             #- desisim-testdata & redrock-templates: data only, no tests
             if repo in ['desisim-testdata', 'redrock-templates']:
-                commands = ['git pull', ]
+                commands = [pullcmd, ]
 
             #- prospect and desisurveyops: no unit tests
             if repo in ['prospect', 'desisurveyops']:
                 commands = [
-                    "git pull",
+                    pullcmd,
                     "python -m compileall -f ./py",
                     ]
 
@@ -135,17 +136,17 @@ def update(basedir=None, logdir='.', repos=None):
             #- simqso: no py/ subdir; no tests
             if repo == 'simqso':
                 commands = [
-                    "git pull",
+                    pullcmd,
                     "python -m compileall -f simqso",
                     ]
 
-            assert "git pull" in commands
+            assert pullcmd in commands
             for cmd in commands:
                 x = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT, universal_newlines=True)
                 repo_results['log'].extend( ['--- '+cmd, x.stdout] )
 
-                if cmd == "git pull":
+                if cmd == pullcmd:
                     if "Already up to date." in x.stdout:
                         repo_results['updated'] = False
                     else:
