@@ -65,7 +65,9 @@ def update(basedir=None, logdir='.', repos=None):
             'fastspecfit',
         ]
 
-    pullcmd='git pull && chmod -R a+rX .'
+    pullcmd='git pull'
+    chmodcmd='chmod -R a+rX .'
+
     something_failed = False
     for repo in repos:
         t0 = time.time()
@@ -139,6 +141,9 @@ def update(basedir=None, logdir='.', repos=None):
                     pullcmd,
                     "python -m compileall -f simqso",
                     ]
+
+            # always set permissions as the last command
+            commands.append(chmodcmd)
 
             assert pullcmd in commands
             for cmd in commands:
