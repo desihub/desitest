@@ -80,4 +80,13 @@ echo
 
 tail -10 $outdir/dailytest.log
 
+# set world read permissions for main directories recursively
+echo "setting world read permissions for all main directories recursively"
+droot=$DESICONDA/../../
+for main in $(find $droot -name main -type d)
+do
+    chmod -R a+rX $main
+done
+echo "files missed by chmod: " $(find $droot -wholename \*/main/\* -not -perm /o+r -ls)
+
 echo `date` done with dailytest
