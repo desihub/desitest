@@ -81,7 +81,7 @@ def update(basedir=None, logdir='.', repos=None):
 
         pytestcom="pytest py/"+repo+"/test"
         if repo == 'fiberassign':
-            pytestcom="python setup.py test"
+            pytestcom="python -c 'import os; import sys; sys.path.insert(0, os.path.abspath(\"./py\")); import fiberassign.test; fiberassign.test.runtests()'"
         if repo == 'specsim':
             pytestcom="pytest "+repo+"/tests"
 
@@ -97,7 +97,7 @@ def update(basedir=None, logdir='.', repos=None):
                 "python -m compileall -f ./py",
                 pytestcom,
             ]
-            
+
             #- special cases for commands
 
             #- fiberassign: compiled code
@@ -162,7 +162,7 @@ def update(basedir=None, logdir='.', repos=None):
                     something_failed = True
                     break
                 else:
-                    repo_results['status'] = 'ok'            
+                    repo_results['status'] = 'ok'
 
         repo_results['time'] = time.time() - t0
         repo_results['log'] = '\n'.join(repo_results['log'])
