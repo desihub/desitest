@@ -80,8 +80,6 @@ def update(basedir=None, logdir='.', repos=None):
             print(f'WARNING: using {repo}/master instead of main')
 
         pytestcom="pytest py/"+repo+"/test"
-        if repo == 'fiberassign':
-            pytestcom="python -c 'import os; import sys; sys.path.insert(0, os.path.abspath(\"./py\")); import fiberassign.test; fiberassign.test.runtests()'"
         if repo == 'specsim':
             pytestcom="pytest "+repo+"/tests"
 
