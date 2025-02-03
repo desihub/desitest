@@ -80,8 +80,6 @@ def update(basedir=None, logdir='.', repos=None):
             print(f'WARNING: using {repo}/master instead of main')
 
         pytestcom="pytest py/"+repo+"/test"
-        if repo == 'fiberassign':
-            pytestcom="python setup.py test"
         if repo == 'specsim':
             pytestcom="pytest "+repo+"/tests"
 
@@ -97,7 +95,7 @@ def update(basedir=None, logdir='.', repos=None):
                 "python -m compileall -f ./py",
                 pytestcom,
             ]
-            
+
             #- special cases for commands
 
             #- fiberassign: compiled code
@@ -162,7 +160,7 @@ def update(basedir=None, logdir='.', repos=None):
                     something_failed = True
                     break
                 else:
-                    repo_results['status'] = 'ok'            
+                    repo_results['status'] = 'ok'
 
         repo_results['time'] = time.time() - t0
         repo_results['log'] = '\n'.join(repo_results['log'])
