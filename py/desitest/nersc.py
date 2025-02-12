@@ -104,7 +104,7 @@ def update(basedir=None, logdir='.', repos=None):
 
             #- specex: compiled code
             if repo == 'specex':
-                commands = [pullcmd, 'python setup.py build_ext --inplace']
+                commands = [pullcmd, 'python setup.py build_ext --inplace', pytestcom]
 
             #- desimodel: also update svn data
             if repo == 'desimodel':
