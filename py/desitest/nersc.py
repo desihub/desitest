@@ -69,6 +69,10 @@ def update(basedir=None, logdir='.', repos=None):
     chmodcmd='chmod -R a+rX .'
 
     something_failed = False
+
+    ## DEBUG:
+    repos = repos[0:2]
+
     for repo in repos:
         t0 = time.time()
         repo_results = dict()
@@ -173,6 +177,22 @@ def update(basedir=None, logdir='.', repos=None):
         with open(logfile, 'w') as fx:
             fx.write(results[repo]['log'])
 
+    #- Also ensure world read to the startup module files
+    #- Hardcode path, but at least confirm that it exists
+    startupdir = os.path.expandvars('/global/common/software/desi/$NERSC_HOST/desiconda/startup')
+    if os.path.exists(startupdir):
+        os.chdir(startupdir)
+        x = subprocess.run(chmodcmd, shell=True, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, universal_newlines=True)
+        if x.returncode != 0:
+            startup_permissions_msg = f'ERROR updating permissions of {startupdir}'
+            something_failed = True
+        else:
+            startup_permissions_msg = f'Updated world read permissions for {startupdir}'
+    else:
+        something_failed = True
+        startup_permissions_msg = f"ERROR: {startupdir} doesn't exist"
+
     #- Write index.html in log directory
     with open(os.path.join(logdir, 'index.html'), 'w') as fx:
         fx.write('<html>\n<body>\n')
@@ -199,6 +219,8 @@ def update(basedir=None, logdir='.', repos=None):
     for repo in repos:
         updated = 'updated' if results[repo]['updated'] else 'same'
         print("{:12s} {:8s} {}".format(repo, updated, results[repo]['status']))
+
+    print(startup_permissions_msg)
 
     if something_failed:
         print("\nSome updates+tests failed {}".format(time.asctime()))
