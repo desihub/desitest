@@ -70,9 +70,6 @@ def update(basedir=None, logdir='.', repos=None):
 
     something_failed = False
 
-    ## DEBUG:
-    repos = repos[0:2]
-
     for repo in repos:
         t0 = time.time()
         repo_results = dict()
