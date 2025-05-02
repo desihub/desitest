@@ -8,7 +8,7 @@ import time
 from io import StringIO
 from desitest.util import send_email
 
-def update(basedir=None, logdir='.', repos=None):
+def update(basedir=None, logdir='.', repos=None, testonly=False):
     '''Update git repos in basedir and run unit tests
 
     Args:
@@ -17,6 +17,7 @@ def update(basedir=None, logdir='.', repos=None):
     Options:
         logdir: output log directory
         repos: list of repos to update and test
+        testonly (bool): if True, skip "git pull" and only run tests
 
     Writes logfiles from each git pull + tests plus index.html into logdir
     '''
@@ -80,9 +81,13 @@ def update(basedir=None, logdir='.', repos=None):
             repodir = os.path.join(basedir, repo, 'master')
             print(f'WARNING: using {repo}/master instead of main')
 
-        pytestcom="pytest py/"+repo+"/test"
+        pytestcom = "pytest py/"+repo+"/test"
         if repo == 'specsim':
-            pytestcom="pytest "+repo+"/tests"
+            pytestcom = "pytest "+repo+"/tests"
+        elif repo == 'desisim':
+            #- use desisim-testdata for faster testing
+            pytestcom = ('module load desisim-testdata && '+pytestcom
+                                   +' && '+'module unload desisim-testdata')
 
         if not os.path.exists(repodir):
             repo_results['status'] = 'FAILURE'
@@ -127,13 +132,6 @@ def update(basedir=None, logdir='.', repos=None):
                     "python -m compileall -f ./py",
                     ]
 
-            #- desisim: use desisim-testdata to run faster
-            if repo == 'desisim':
-                if pytestcom in commands:
-                    i = commands.index(pytestcom)
-                    commands[i] = ('module load desisim-testdata && '+pytestcom
-                                   +' && '+'module unload desisim-testdata')
-
             #- simqso: no py/ subdir; no tests
             if repo == 'simqso':
                 commands = [
@@ -145,6 +143,13 @@ def update(basedir=None, logdir='.', repos=None):
             commands.append(chmodcmd)
 
             assert pullcmd in commands
+
+            if testonly:
+                if repo in ('simqso', 'prospect', 'desisurveyops', 'desisim-testdata', 'redrock-templates'):
+                    commands = [f'echo test only: skipping update of {repo}',]
+                else:
+                    commands = [pytestcom,]
+
             for cmd in commands:
                 x = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT, universal_newlines=True)
@@ -176,19 +181,20 @@ def update(basedir=None, logdir='.', repos=None):
 
     #- Also ensure world read to the startup module files
     #- Hardcode path, but at least confirm that it exists
-    startupdir = os.path.expandvars('/global/common/software/desi/$NERSC_HOST/desiconda/startup')
-    if os.path.exists(startupdir):
-        os.chdir(startupdir)
-        x = subprocess.run(chmodcmd, shell=True, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, universal_newlines=True)
-        if x.returncode != 0:
-            startup_permissions_msg = f'ERROR updating permissions of {startupdir}'
-            something_failed = True
+    if not testonly:
+        startupdir = os.path.expandvars('/global/common/software/desi/$NERSC_HOST/desiconda/startup')
+        if os.path.exists(startupdir):
+            os.chdir(startupdir)
+            x = subprocess.run(chmodcmd, shell=True, stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT, universal_newlines=True)
+            if x.returncode != 0:
+                startup_permissions_msg = f'ERROR updating permissions of {startupdir}'
+                something_failed = True
+            else:
+                startup_permissions_msg = f'Updated world read permissions for {startupdir}'
         else:
-            startup_permissions_msg = f'Updated world read permissions for {startupdir}'
-    else:
-        something_failed = True
-        startup_permissions_msg = f"ERROR: {startupdir} doesn't exist"
+            something_failed = True
+            startup_permissions_msg = f"ERROR: {startupdir} doesn't exist"
 
     #- Write index.html in log directory
     with open(os.path.join(logdir, 'index.html'), 'w') as fx:
