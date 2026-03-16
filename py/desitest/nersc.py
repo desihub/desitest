@@ -64,6 +64,8 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             'desimeter',
             'desisurveyops',
             'fastspecfit',
+            'desidatamodel',
+            'LSS',
         ]
 
     pullcmd='git pull'
@@ -81,6 +83,7 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             repodir = os.path.join(basedir, repo, 'master')
             print(f'WARNING: using {repo}/master instead of main')
 
+        #- special cases for testing
         pytestcom = "pytest py/"+repo+"/test"
         if repo == 'specsim':
             pytestcom = "pytest "+repo+"/tests"
@@ -125,8 +128,8 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             if repo in ['desisim-testdata', 'redrock-templates']:
                 commands = [pullcmd, ]
 
-            #- prospect and desisurveyops: no unit tests
-            if repo in ['prospect', 'desisurveyops']:
+            #- prospect, desisurveyops, LSS: no unit tests
+            if repo in ['prospect', 'desisurveyops', 'LSS']:
                 commands = [
                     pullcmd,
                     "python -m compileall -f ./py",
