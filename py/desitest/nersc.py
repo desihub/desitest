@@ -40,32 +40,34 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
 
     results = dict()
 
-    #- repositories to update in order of dependencies
-    #- TODO: consider speclite, and redmonster or redrock
+    #- repositories to update in order of desimodules
     if repos is None:
         repos = [
             'desiutil',
             'specter',
             'gpu_specter',
             'desimodel',
+            'specex',
             'desitarget',
-            'desispec',
             'specsim',
+            'desispec',
             'desisim-testdata',
             'desisim',
+            'fiberassign',
             'desisurvey',
             'surveysim',
             'redrock',
             'redrock-templates',
-            'simqso',
-            'fiberassign',
-            'specex',
             'prospect',
             'desimeter',
-            'desisurveyops',
+            'simqso',
+            'speclite',
+            'QuasarNP',
+            'specprod-db',
             'fastspecfit',
-            'desidatamodel',
-            'LSS',
+            'desisurveyops',  # not included in desimodules
+            'desidatamodel',  # not included in desimodules
+            'LSS',  # not included in desimodules
         ]
 
     pullcmd='git pull'
