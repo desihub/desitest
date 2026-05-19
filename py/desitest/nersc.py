@@ -93,6 +93,8 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             pytestcom = "pytest "+repo+"/tests"
         elif repo == 'specprod-db':
             pytestcom = "pytest py/specprodDB/test"
+        elif repo == 'QuasarNP':
+            pytestcom = "pytest quasarnp/tests"
         elif repo == 'desisim':
             #- use desisim-testdata for faster testing
             pytestcom = ('module load desisim-testdata && '+pytestcom
