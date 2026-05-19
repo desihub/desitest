@@ -84,6 +84,8 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
         if not os.path.exists(repodir):
             repodir = os.path.join(basedir, repo, 'master')
             print(f'WARNING: using {repo}/master instead of main')
+            if not os.path.exists(repodir):
+                print(f'ERROR: no checkout could be found for {repo}')
 
         #- special cases for testing
         pytestcom = "pytest py/"+repo+"/test"
