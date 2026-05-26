@@ -41,12 +41,12 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
     results = dict()
 
     #- repositories to update in order of dependencies
-    #- TODO: consider speclite, and redmonster or redrock
     if repos is None:
         repos = [
             'desiutil',
             'specter',
             'gpu_specter',
+            'speclite',
             'desimodel',
             'desitarget',
             'desispec',
@@ -62,10 +62,12 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             'specex',
             'prospect',
             'desimeter',
-            'desisurveyops',
+            'desisurveyops',  # not included in desimodules
+            'QuasarNP',
+            'specprod-db',
             'fastspecfit',
-            'desidatamodel',
-            'LSS',
+            'desidatamodel',  # not included in desimodules
+            'LSS',  # not included in desimodules
         ]
 
     pullcmd='git pull'
@@ -82,18 +84,24 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
         if not os.path.exists(repodir):
             repodir = os.path.join(basedir, repo, 'master')
             print(f'WARNING: using {repo}/master instead of main')
+            if not os.path.exists(repodir):
+                print(f'ERROR: no checkout could be found for {repo}')
 
         #- special cases for testing
         pytestcom = "pytest py/"+repo+"/test"
-        if repo == 'specsim':
+        if repo == 'specsim' or repo == 'speclite':
             pytestcom = "pytest "+repo+"/tests"
+        elif repo == 'specprod-db':
+            pytestcom = "pytest py/specprodDB/test"
+        elif repo == 'QuasarNP':
+            pytestcom = "pytest quasarnp/tests"
         elif repo == 'desisim':
             #- use desisim-testdata for faster testing
             pytestcom = ('module load desisim-testdata && '+pytestcom
                                    +' && '+'module unload desisim-testdata')
 
         if not os.path.exists(repodir):
-            repo_results['status'] = 'FAILURE'
+            repo_results['status'] = 'MISSING'
             repo_results['log'] = 'Missing directory {}'.format(repodir)
             repo_results['updated'] = False
         else:
@@ -120,9 +128,9 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
                 commands = ['svn update data/',] + commands
 
             #- specsim: python code not under py/
-            if repo == 'specsim':
+            if repo == 'specsim' or repo == 'speclite':
                 i = commands.index('python -m compileall -f ./py')
-                commands[i] = 'python -m compileall -f specsim'
+                commands[i] = f'python -m compileall -f {repo}'
 
             #- desisim-testdata & redrock-templates: data only, no tests
             if repo in ['desisim-testdata', 'redrock-templates']:

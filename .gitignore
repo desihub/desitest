@@ -93,3 +93,6 @@ ENV/
 
 # Minitest data files
 mini/*.fits
+
+# Private email list for alerts
+py/desitest/emails.txt
