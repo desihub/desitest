@@ -83,72 +83,73 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
         repodir = os.path.join(basedir, repo, 'main')
         if not os.path.exists(repodir):
             repodir = os.path.join(basedir, repo, 'master')
-            print(f'WARNING: using {repo}/master instead of main')
+            print(f'WARNING: trying to use {repo}/master instead of main')
             if not os.path.exists(repodir):
                 print(f'ERROR: no checkout could be found for {repo}')
-
-        #- special cases for testing
-        pytestcom = "pytest py/"+repo+"/test"
-        if repo == 'specsim' or repo == 'speclite':
-            pytestcom = "pytest "+repo+"/tests"
-        elif repo == 'specprod-db':
-            pytestcom = "pytest py/specprodDB/test"
-        elif repo == 'QuasarNP':
-            pytestcom = "pytest quasarnp/tests"
-        elif repo == 'desisim':
-            #- use desisim-testdata for faster testing
-            pytestcom = ('module load desisim-testdata && '+pytestcom
-                                   +' && '+'module unload desisim-testdata')
-
-        if not os.path.exists(repodir):
-            repo_results['status'] = 'MISSING'
-            repo_results['log'] = 'Missing directory {}'.format(repodir)
-            repo_results['updated'] = False
+                repo_results['status'] = 'MISSING'
+                repo_results['log'] = 'Missing directory {}'.format(repodir)
+                repo_results['updated'] = False
+                continue
         else:
             os.chdir(repodir)
             repo_results['log'] = ['--- {}'.format(repodir), '']
-            commands = [
-                pullcmd,
-                "python -m compileall -f ./py",
-                pytestcom,
-            ]
-
-            #- special cases for commands
-
-            #- fiberassign: compiled code
-            if repo == 'fiberassign':
-                commands = [pullcmd, 'python setup.py build_ext --inplace', pytestcom]
-
-            #- specex: compiled code
-            if repo == 'specex':
-                commands = [pullcmd, 'python setup.py build_ext --inplace', pytestcom]
+            #
+            # Special cases for pulling
+            #
+            commands = [pullcmd]
 
             #- desimodel: also update svn data
             if repo == 'desimodel':
-                commands = ['svn update data/',] + commands
+                commands = ['svn update data/', pullcmd]
 
-            #- specsim: python code not under py/
-            if repo == 'specsim' or repo == 'speclite':
-                i = commands.index('python -m compileall -f ./py')
-                commands[i] = f'python -m compileall -f {repo}'
+            #
+            # Special cases for building
+            #
+            buildcmd = "python -m compileall -f ./py"
+
+            #- fiberassign, specex: compiled code
+            if repo == 'fiberassign' or repo == 'specex':
+                buildcmd = 'python setup.py build_ext --inplace'
+
+            #- specsim, etc.: python code not under py/
+            if repo == 'speclite' or repo == 'specsim' or repo == 'simqso':
+                buildcmd = f"python -m compileall -f {repo}"
 
             #- desisim-testdata & redrock-templates: data only, no tests
-            if repo in ['desisim-testdata', 'redrock-templates']:
-                commands = [pullcmd, ]
+            if repo == 'desisim-testdata' or repo == 'redrock-templates':
+                buildcmd = None
 
-            #- prospect, desisurveyops, LSS: no unit tests
-            if repo in ['prospect', 'desisurveyops', 'LSS']:
-                commands = [
-                    pullcmd,
-                    "python -m compileall -f ./py",
-                    ]
+            if buildcmd is not None:
+                commands.append(buildcmd)
+            #
+            # Special cases for testing
+            #
+            pytestcom = f"pytest py/{repo}/test"
 
-            #- simqso: no py/ subdir; no tests
-            if repo == 'simqso':
-                commands = [
-                    pullcmd,
-                    "python -m compileall -f simqso",
-                    ]
+            if repo == 'specsim' or repo == 'speclite':
+                pytestcom = f"pytest {repo}/tests"
+
+            if repo == 'specprod-db':
+                pytestcom = "pytest py/specprodDB/test"
+
+            if repo == 'QuasarNP':
+                pytestcom = "pytest quasarnp/tests"
+
+            #- use desisim-testdata for faster testing
+            if repo == 'desisim':
+                pytestcom = ('module load desisim-testdata && ' + pytestcom +
+                             ' && module unload desisim-testdata')
+
+            #- desisurveyops, LSS, simqso: no unit tests
+            if repo == 'desisurveyops' or repo == 'LSS' or repo == 'simqso':
+                pytestcom = None
+
+            #- desisim-testdata & redrock-templates: data only, no tests
+            if repo == 'desisim-testdata' or repo == 'redrock-templates':
+                pytestcom = None
+
+            if pytestcom is not None:
+                commands.append(pytestcom)
 
             # always set permissions as the last command
             commands.append(chmodcmd)
@@ -156,7 +157,7 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             assert pullcmd in commands
 
             if testonly:
-                if repo in ('simqso', 'prospect', 'desisurveyops', 'desisim-testdata', 'redrock-templates'):
+                if pytestcom is None:
                     commands = [f'echo test only: skipping update of {repo}',]
                 else:
                     commands = [pytestcom,]
