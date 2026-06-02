@@ -209,27 +209,22 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             startup_permissions_msg = f"ERROR: {startupdir} doesn't exist"
 
     #- Write index.html in log directory
+    title = "desitest.nersc: Updated {0}".format(time.asctime())
     with open(os.path.join(logdir, 'index.html'), 'w') as fx:
-        fx.write('<html>\n<body>\n')
-        fx.write('<h1>Updated {}</h1>\n'.format(time.asctime()))
+        fx.write('<!DOCTYPE html>\n')
+        fx.write(f'<html lang="en-US">\n<head><title>{title}</title></head>\n<body>\n')
+        fx.write(f'<h1>{title}</h1>\n')
         fx.write('<table>\n')
-        fx.write('  <tr>\n')
-        fx.write('    <th>Repo</th><th>Updated</th><th>Status</th><th>Time</th>\n')
-        fx.write('  </tr>\n')
+        fx.write('  <thead>\n')
+        fx.write('      <tr><th>Repo</th><th>Updated</th><th>Status</th><th>Time</th></tr>\n')
+        fx.write('  </thead>\n')
+        fx.write('  <tbody>\n')
         for repo in repos:
-            fx.write('  <tr>\n')
-            fx.write('    <td>{}</td>\n'.format(repo))
-            if results[repo]['updated']:
-                fx.write('    <td>yes</td>\n')
-            else:
-                fx.write('    <td></td>\n')
-
-            fx.write('    <td><a href="{}.log">{}</a></td>\n'.format(repo, results[repo]['status']))
+            up = 'yes' if results[repo]['updated'] else ''
             dt = int(results[repo]['time'])
             timestr = '{:02d}:{:02d}'.format(dt//60, dt%60)
-            fx.write('    <td>{}</td>\n'.format(timestr))
-            fx.write('  </tr>\n')
-        fx.write('</table>\n</body>\n</html>\n')
+            fx.write(f'    <tr><td>{repo}</td><td>{up}</td><td><a href="{repo}.log">{results[repo]["status"]}</a></td><td>{timestr}</td></tr>\n')
+        fx.write('  </tbody>\n</table>\n</body>\n</html>\n')
 
     for repo in repos:
         updated = 'updated' if results[repo]['updated'] else 'same'
@@ -243,7 +238,6 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
         print("\nAll updates+tests succeded {}".format(time.asctime()))
 
     print("\nhttp://data.desi.lbl.gov/desi/spectro/redux/dailytest/log/"+os.environ['NERSC_HOST'])
-    sys.stdout = stdout
 
     emailfile=os.path.dirname(os.path.abspath(__file__))+'/emails.txt'
     if os.path.isfile(emailfile):
@@ -251,6 +245,10 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
         to=emails[0]
         cc=emails[1:]
         send_email("perlmutter desitest",to,"perlmutter desitest {}".format(time.asctime()),output.getvalue(),Cc=cc)
+    else:
+        print(f"WARNING: {emailfile} not detected so no email sent!")
+
+    sys.stdout = stdout
 
     print(output.getvalue())
 
