@@ -210,7 +210,9 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             startup_permissions_msg = f"ERROR: {startupdir} doesn't exist"
 
     #- Write index.html in log directory
-    title = "desitest.nersc: Updated {0}".format(time.asctime())
+    output_timestamp = time.asctime()
+    nersc_host = os.environ['NERSC_HOST']
+    title = f"{nersc_host} desitest.nersc: Updated {output_timestamp}"
     with open(os.path.join(logdir, 'index.html'), 'w') as fx:
         fx.write('<!DOCTYPE html>\n')
         fx.write(f'<html lang="en-US">\n<head><title>{title}</title></head>\n<body>\n')
@@ -234,18 +236,18 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
     print(startup_permissions_msg)
 
     if something_failed:
-        print("\nSome updates+tests failed {}".format(time.asctime()))
+        print(f"\nSome updates+tests failed {output_timestamp}")
     else:
-        print("\nAll updates+tests succeded {}".format(time.asctime()))
+        print(f"\nAll updates+tests succeded {output_timestamp}")
 
-    print("\nhttp://data.desi.lbl.gov/desi/spectro/redux/dailytest/log/"+os.environ['NERSC_HOST'])
+    print(f"\nhttps://data.desi.lbl.gov/desi/spectro/redux/dailytest/log/{nersc_host}")
 
-    emailfile=os.path.dirname(os.path.abspath(__file__))+'/emails.txt'
+    emailfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'emails.txt')
     if os.path.isfile(emailfile):
-        emails=[line for line in open(emailfile,'r')][0].strip().split(',')
-        to=emails[0]
-        cc=emails[1:]
-        send_email("perlmutter desitest",to,"perlmutter desitest {}".format(time.asctime()),output.getvalue(),Cc=cc)
+        with open(emailfile, 'r') as EMAIL:
+            data = EMAIL.readlines()
+        emails = [e for e in [line.strip() for line in data] if e]
+        send_email(f"{nersc_host} desitest", emails[0], title, output.getvalue(), Cc=emails[1:])
     else:
         print(f"WARNING: {emailfile} not detected so no email sent!")
 
