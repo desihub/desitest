@@ -124,16 +124,17 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             #
             # Special cases for testing
             #
-            pytestcom = f"pytest py/{repo}/test"
+            pytest_options = "--color=no"
+            pytestcom = f"pytest {pytest_options} py/{repo}/test"
 
             if repo == 'specsim' or repo == 'speclite':
-                pytestcom = f"pytest {repo}/tests"
+                pytestcom = f"pytest {pytest_options} {repo}/tests"
 
             if repo == 'specprod-db':
-                pytestcom = "pytest py/specprodDB/test"
+                pytestcom = "pytest {pytest_options} py/specprodDB/test"
 
             if repo == 'QuasarNP':
-                pytestcom = "pytest quasarnp/tests"
+                pytestcom = "pytest {pytest_options} quasarnp/tests"
 
             #- use desisim-testdata for faster testing
             if repo == 'desisim':
