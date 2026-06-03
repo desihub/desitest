@@ -1,16 +1,36 @@
+"""
+desitest.util
+=============
+
+Common utility functions.
+"""
 import smtplib
 import os
-import socket
 from email.message import Message
 
-def send_email(FromName,To,Subject,Body,Cc=None):
 
+def send_email(FromName, To, Subject, Body, Cc=None):
+    """Send mail from `FromName` to `To`.
+
+    Parameters
+    ----------
+    FromName : :class:`str`
+        Name to associate with the sender.
+    To : :class:`str`
+        Recipient of the message.
+    Subject : :class:`str`
+        Subject of the message.
+    Body : :class:`str`
+        Text of the message.
+    Cc : :class:`list`, optional
+        A list of additional recipients.
+    """
     From = f"{FromName} <{os.environ['USER']}@nersc.gov>"
 
-    msg            = Message()
+    msg = Message()
 
-    msg['From']    = From
-    msg['To']      = To
+    msg['From'] = From
+    msg['To'] = To
     msg['Subject'] = Subject
 
     if Cc is not None:

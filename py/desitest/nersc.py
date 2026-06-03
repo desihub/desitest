@@ -1,12 +1,48 @@
 """
+desitest.nersc
+==============
+
 Tools for updating and testing code at NERSC
 """
-
-import sys, os
+import os
+import sys
 import subprocess
 import time
 from io import StringIO
 from desitest.util import send_email
+
+
+#
+# List default repos here, to make them easier to change.
+# The order is important. Packages earlier in the list may be
+# dependencies for packages later in the list.
+#
+default_repos = ('desiutil',
+                 'specter',
+                 'gpu_specter',
+                 'speclite',
+                 'desimodel',
+                 'desitarget',
+                 'desispec',
+                 'specsim',
+                 'desisim-testdata',
+                 'desisim',
+                 'desisurvey',
+                 'surveysim',
+                 'redrock',
+                 'redrock-templates',
+                 'simqso',
+                 'fiberassign',
+                 'specex',
+                 'prospect',
+                 'desimeter',
+                 'desisurveyops',  # not included in desimodules
+                 'QuasarNP',
+                 'specprod-db',
+                 'fastspecfit',
+                 'desidatamodel',  # not included in desimodules
+                 'LSS')  # not included in desimodules
+
 
 def update(basedir=None, logdir='.', repos=None, testonly=False):
     '''Update git repos in basedir and run unit tests
@@ -42,33 +78,7 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
 
     #- repositories to update in order of dependencies
     if repos is None:
-        repos = [
-            'desiutil',
-            'specter',
-            'gpu_specter',
-            'speclite',
-            'desimodel',
-            'desitarget',
-            'desispec',
-            'specsim',
-            'desisim-testdata',
-            'desisim',
-            'desisurvey',
-            'surveysim',
-            'redrock',
-            'redrock-templates',
-            'simqso',
-            'fiberassign',
-            'specex',
-            'prospect',
-            'desimeter',
-            'desisurveyops',  # not included in desimodules
-            'QuasarNP',
-            'specprod-db',
-            'fastspecfit',
-            'desidatamodel',  # not included in desimodules
-            'LSS',  # not included in desimodules
-        ]
+        repos = default_repos
 
     pullcmd='git pull'
     chmodcmd='chmod -R a+rX .'
@@ -131,10 +141,10 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
                 pytestcom = f"pytest {pytest_options} {repo}/tests"
 
             if repo == 'specprod-db':
-                pytestcom = "pytest {pytest_options} py/specprodDB/test"
+                pytestcom = f"pytest {pytest_options} py/specprodDB/test"
 
             if repo == 'QuasarNP':
-                pytestcom = "pytest {pytest_options} quasarnp/tests"
+                pytestcom = f"pytest {pytest_options} quasarnp/tests"
 
             #- use desisim-testdata for faster testing
             if repo == 'desisim':
