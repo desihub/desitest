@@ -3,7 +3,7 @@
 This repo contains utilities for cross package testing of DESI code.
 
 `etc/cron_dailyupdate.sh` is run as a cronjob on edison01.nersc.gov;
-it calls `desitest.nersc.update` to 'git pull' the master copy of each repo
+it calls `desitest.nersc.update()` to `git pull` the master copy of each repo
 and run their unit tests, and then it runs the spectro pipeline integration
 test (currently in desispec).
 

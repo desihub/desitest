@@ -1,12 +1,48 @@
 """
+desitest.nersc
+==============
+
 Tools for updating and testing code at NERSC
 """
-
-import sys, os
+import os
+import sys
 import subprocess
 import time
 from io import StringIO
 from desitest.util import send_email
+
+
+#
+# List default repos here, to make them easier to change.
+# The order is important. Packages earlier in the list may be
+# dependencies for packages later in the list.
+#
+default_repos = ('desiutil',
+                 'specter',
+                 'gpu_specter',
+                 'speclite',
+                 'desimodel',
+                 'desitarget',
+                 'desispec',
+                 'specsim',
+                 'desisim-testdata',
+                 'desisim',
+                 'desisurvey',
+                 'surveysim',
+                 'redrock',
+                 'redrock-templates',
+                 'simqso',
+                 'fiberassign',
+                 'specex',
+                 'prospect',
+                 'desimeter',
+                 'desisurveyops',  # not included in desimodules
+                 'QuasarNP',
+                 'specprod-db',
+                 'fastspecfit',
+                 'desidatamodel',  # not included in desimodules
+                 'LSS')  # not included in desimodules
+
 
 def update(basedir=None, logdir='.', repos=None, testonly=False):
     '''Update git repos in basedir and run unit tests
@@ -42,33 +78,7 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
 
     #- repositories to update in order of dependencies
     if repos is None:
-        repos = [
-            'desiutil',
-            'specter',
-            'gpu_specter',
-            'speclite',
-            'desimodel',
-            'desitarget',
-            'desispec',
-            'specsim',
-            'desisim-testdata',
-            'desisim',
-            'desisurvey',
-            'surveysim',
-            'redrock',
-            'redrock-templates',
-            'simqso',
-            'fiberassign',
-            'specex',
-            'prospect',
-            'desimeter',
-            'desisurveyops',  # not included in desimodules
-            'QuasarNP',
-            'specprod-db',
-            'fastspecfit',
-            'desidatamodel',  # not included in desimodules
-            'LSS',  # not included in desimodules
-        ]
+        repos = default_repos
 
     pullcmd='git pull'
     chmodcmd='chmod -R a+rX .'
@@ -83,72 +93,74 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
         repodir = os.path.join(basedir, repo, 'main')
         if not os.path.exists(repodir):
             repodir = os.path.join(basedir, repo, 'master')
-            print(f'WARNING: using {repo}/master instead of main')
+            print(f'WARNING: trying to use {repo}/master instead of main')
             if not os.path.exists(repodir):
                 print(f'ERROR: no checkout could be found for {repo}')
-
-        #- special cases for testing
-        pytestcom = "pytest py/"+repo+"/test"
-        if repo == 'specsim' or repo == 'speclite':
-            pytestcom = "pytest "+repo+"/tests"
-        elif repo == 'specprod-db':
-            pytestcom = "pytest py/specprodDB/test"
-        elif repo == 'QuasarNP':
-            pytestcom = "pytest quasarnp/tests"
-        elif repo == 'desisim':
-            #- use desisim-testdata for faster testing
-            pytestcom = ('module load desisim-testdata && '+pytestcom
-                                   +' && '+'module unload desisim-testdata')
-
-        if not os.path.exists(repodir):
-            repo_results['status'] = 'MISSING'
-            repo_results['log'] = 'Missing directory {}'.format(repodir)
-            repo_results['updated'] = False
+                repo_results['status'] = 'MISSING'
+                repo_results['log'] = 'Missing directory {}'.format(repodir)
+                repo_results['updated'] = False
+                continue
         else:
             os.chdir(repodir)
             repo_results['log'] = ['--- {}'.format(repodir), '']
-            commands = [
-                pullcmd,
-                "python -m compileall -f ./py",
-                pytestcom,
-            ]
-
-            #- special cases for commands
-
-            #- fiberassign: compiled code
-            if repo == 'fiberassign':
-                commands = [pullcmd, 'python setup.py build_ext --inplace', pytestcom]
-
-            #- specex: compiled code
-            if repo == 'specex':
-                commands = [pullcmd, 'python setup.py build_ext --inplace', pytestcom]
+            #
+            # Special cases for pulling
+            #
+            commands = [pullcmd]
 
             #- desimodel: also update svn data
             if repo == 'desimodel':
-                commands = ['svn update data/',] + commands
+                commands = ['svn update data/', pullcmd]
 
-            #- specsim: python code not under py/
-            if repo == 'specsim' or repo == 'speclite':
-                i = commands.index('python -m compileall -f ./py')
-                commands[i] = f'python -m compileall -f {repo}'
+            #
+            # Special cases for building
+            #
+            buildcmd = "python -m compileall -f ./py"
+
+            #- fiberassign, specex: compiled code
+            if repo == 'fiberassign' or repo == 'specex':
+                buildcmd = 'python setup.py build_ext --inplace'
+
+            #- specsim, etc.: python code not under py/
+            if repo == 'speclite' or repo == 'specsim' or repo == 'simqso':
+                buildcmd = f"python -m compileall -f {repo}"
 
             #- desisim-testdata & redrock-templates: data only, no tests
-            if repo in ['desisim-testdata', 'redrock-templates']:
-                commands = [pullcmd, ]
+            if repo == 'desisim-testdata' or repo == 'redrock-templates':
+                buildcmd = None
 
-            #- prospect, desisurveyops, LSS: no unit tests
-            if repo in ['prospect', 'desisurveyops', 'LSS']:
-                commands = [
-                    pullcmd,
-                    "python -m compileall -f ./py",
-                    ]
+            if buildcmd is not None:
+                commands.append(buildcmd)
+            #
+            # Special cases for testing
+            #
+            pytest_options = "--color=no"
+            pytestcom = f"pytest {pytest_options} py/{repo}/test"
 
-            #- simqso: no py/ subdir; no tests
-            if repo == 'simqso':
-                commands = [
-                    pullcmd,
-                    "python -m compileall -f simqso",
-                    ]
+            if repo == 'specsim' or repo == 'speclite':
+                pytestcom = f"pytest {pytest_options} {repo}/tests"
+
+            if repo == 'specprod-db':
+                pytestcom = f"pytest {pytest_options} py/specprodDB/test"
+
+            if repo == 'QuasarNP':
+                pytestcom = f"pytest {pytest_options} quasarnp/tests"
+
+            #- use desisim-testdata for faster testing
+            if repo == 'desisim':
+                pytestcom = ('module load desisim-testdata && ' + pytestcom +
+                             ' && module unload desisim-testdata')
+
+            #- desisurveyops, LSS, simqso: no unit tests
+            if repo == 'desisurveyops' or repo == 'LSS' or repo == 'simqso':
+                pytestcom = None
+
+            #- desisim-testdata & redrock-templates: data only, no tests
+            if repo == 'desisim-testdata' or repo == 'redrock-templates':
+                pytestcom = None
+
+            if pytestcom is not None:
+                commands.append(pytestcom)
 
             # always set permissions as the last command
             commands.append(chmodcmd)
@@ -156,7 +168,7 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             assert pullcmd in commands
 
             if testonly:
-                if repo in ('simqso', 'prospect', 'desisurveyops', 'desisim-testdata', 'redrock-templates'):
+                if pytestcom is None:
                     commands = [f'echo test only: skipping update of {repo}',]
                 else:
                     commands = [pytestcom,]
@@ -208,27 +220,24 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
             startup_permissions_msg = f"ERROR: {startupdir} doesn't exist"
 
     #- Write index.html in log directory
+    output_timestamp = time.asctime()
+    nersc_host = os.environ['NERSC_HOST']
+    title = f"{nersc_host} desitest.nersc: Updated {output_timestamp}"
     with open(os.path.join(logdir, 'index.html'), 'w') as fx:
-        fx.write('<html>\n<body>\n')
-        fx.write('<h1>Updated {}</h1>\n'.format(time.asctime()))
+        fx.write('<!DOCTYPE html>\n')
+        fx.write(f'<html lang="en-US">\n<head><title>{title}</title></head>\n<body>\n')
+        fx.write(f'<h1>{title}</h1>\n')
         fx.write('<table>\n')
-        fx.write('  <tr>\n')
-        fx.write('    <th>Repo</th><th>Updated</th><th>Status</th><th>Time</th>\n')
-        fx.write('  </tr>\n')
+        fx.write('  <thead>\n')
+        fx.write('      <tr><th>Repo</th><th>Updated</th><th>Status</th><th>Time</th></tr>\n')
+        fx.write('  </thead>\n')
+        fx.write('  <tbody>\n')
         for repo in repos:
-            fx.write('  <tr>\n')
-            fx.write('    <td>{}</td>\n'.format(repo))
-            if results[repo]['updated']:
-                fx.write('    <td>yes</td>\n')
-            else:
-                fx.write('    <td></td>\n')
-
-            fx.write('    <td><a href="{}.log">{}</a></td>\n'.format(repo, results[repo]['status']))
+            up = 'yes' if results[repo]['updated'] else ''
             dt = int(results[repo]['time'])
             timestr = '{:02d}:{:02d}'.format(dt//60, dt%60)
-            fx.write('    <td>{}</td>\n'.format(timestr))
-            fx.write('  </tr>\n')
-        fx.write('</table>\n</body>\n</html>\n')
+            fx.write(f'    <tr><td>{repo}</td><td>{up}</td><td><a href="{repo}.log">{results[repo]["status"]}</a></td><td>{timestr}</td></tr>\n')
+        fx.write('  </tbody>\n</table>\n</body>\n</html>\n')
 
     for repo in repos:
         updated = 'updated' if results[repo]['updated'] else 'same'
@@ -237,19 +246,22 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
     print(startup_permissions_msg)
 
     if something_failed:
-        print("\nSome updates+tests failed {}".format(time.asctime()))
+        print(f"\nSome updates+tests failed {output_timestamp}")
     else:
-        print("\nAll updates+tests succeded {}".format(time.asctime()))
+        print(f"\nAll updates+tests succeded {output_timestamp}")
 
-    print("\nhttp://data.desi.lbl.gov/desi/spectro/redux/dailytest/log/"+os.environ['NERSC_HOST'])
-    sys.stdout = stdout
+    print(f"\nhttps://data.desi.lbl.gov/desi/spectro/redux/dailytest/log/{nersc_host}")
 
-    emailfile=os.path.dirname(os.path.abspath(__file__))+'/emails.txt'
+    emailfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'emails.txt')
     if os.path.isfile(emailfile):
-        emails=[line for line in open(emailfile,'r')][0].strip().split(',')
-        to=emails[0]
-        cc=emails[1:]
-        send_email("perlmutter desitest",to,"perlmutter desitest {}".format(time.asctime()),output.getvalue(),Cc=cc)
+        with open(emailfile, 'r') as EMAIL:
+            data = EMAIL.readlines()
+        emails = [e for e in [line.strip() for line in data] if e]
+        send_email(f"{nersc_host} desitest", emails[0], title, output.getvalue(), Cc=emails[1:])
+    else:
+        print(f"WARNING: {emailfile} not detected so no email sent!")
+
+    sys.stdout = stdout
 
     print(output.getvalue())
 
