@@ -122,7 +122,7 @@ def update(basedir=None, logdir='.', repos=None, testonly=False):
                 buildcmd = 'python setup.py build_ext --inplace'
 
             #- specsim, etc.: python code not under py/
-            if repo == 'speclite' or repo == 'specsim' or repo == 'simqso':
+            if repo in ('speclite', 'specsim', 'simqso', 'quasarnp'):
                 buildcmd = f"python -m compileall -f {repo}"
 
             #- desisim-testdata & redrock-templates: data only, no tests
